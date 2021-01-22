@@ -2,7 +2,7 @@ import { getRepository, getCustomRepository } from 'typeorm'
 
 import TransactionsRepository from '../repositories/TransactionsRepository'
 
-// import AppError from '../errors/AppError';
+import AppError from '../errors/AppError';
 import Transaction from '../models/Transaction';
 import Category from  '../models/Category'
 
@@ -18,6 +18,12 @@ class CreateTransactionService {
     
     const transactionsRepository = getCustomRepository(TransactionsRepository)
     const categoryRepository = getRepository(Category)
+
+    const { total } = await transactionsRepository.getBalance()
+
+    if(type === 'outcome' && total < value) {
+      throw new AppError('Balance nor valid to outcome transactions')
+    }
 
     let transactionCategory = await categoryRepository.findOne({ 
       where: { title: category }
@@ -36,7 +42,7 @@ class CreateTransactionService {
       title, 
       value, 
       type,
-      category: transactionCategory
+      category: transactionCategory,
     })
 
     await transactionsRepository.save(transaction)
