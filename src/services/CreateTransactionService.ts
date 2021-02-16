@@ -1,53 +1,56 @@
-import { getRepository, getCustomRepository } from 'typeorm'
+import { getRepository, getCustomRepository } from 'typeorm';
 
-import TransactionsRepository from '../repositories/TransactionsRepository'
+import TransactionsRepository from '../repositories/TransactionsRepository';
 
 import AppError from '../errors/AppError';
 import Transaction from '../models/Transaction';
-import Category from  '../models/Category'
+import Category from '../models/Category';
 
 interface Request {
-  title: string, 
-  value: number, 
-  type: 'income' | 'outcome', 
-  category: string
-} 
+  title: string;
+  value: number;
+  type: 'income' | 'outcome';
+  category: string;
+}
 
 class CreateTransactionService {
-  public async execute({ title, value, type, category }: Request): Promise<Transaction> {
-    
-    const transactionsRepository = getCustomRepository(TransactionsRepository)
-    const categoryRepository = getRepository(Category)
+  public async execute({
+    title,
+    value,
+    type,
+    category,
+  }: Request): Promise<Transaction> {
+    const transactionsRepository = getCustomRepository(TransactionsRepository);
+    const categoryRepository = getRepository(Category);
 
-    const { total } = await transactionsRepository.getBalance()
+    const { total } = await transactionsRepository.getBalance();
 
-    if(type === 'outcome' && total < value) {
-      throw new AppError('Balance nor valid to outcome transactions')
+    if (type === 'outcome' && total < value) {
+      throw new AppError('Balance not valid to outcome transactions');
     }
 
-    let transactionCategory = await categoryRepository.findOne({ 
-      where: { title: category }
-    })
+    let transactionCategory = await categoryRepository.findOne({
+      where: { title: category },
+    });
 
-    if(!transactionCategory) {
-
+    if (!transactionCategory) {
       transactionCategory = categoryRepository.create({
-        title: category
-      })
+        title: category,
+      });
 
-      await categoryRepository.save(transactionCategory)
+      await categoryRepository.save(transactionCategory);
     }
 
     const transaction = transactionsRepository.create({
-      title, 
-      value, 
+      title,
+      value,
       type,
       category: transactionCategory,
-    })
+    });
 
-    await transactionsRepository.save(transaction)
+    await transactionsRepository.save(transaction);
 
-    return transaction
+    return transaction;
   }
 }
 
